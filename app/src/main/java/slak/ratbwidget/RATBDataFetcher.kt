@@ -108,6 +108,12 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPo
       }
       return@map (list as TimeList).opt()
     }
+    // The cache might be fucked if this is true
+    if (timeLists.all { list -> list.orElse(emptyList()).all { it.isEmpty() } }) {
+      requestCache.remove(cacheKey)
+      Log.w(TAG, "Cache might be bad")
+      return@async2 getSchedule(route, stop).await()
+    }
     return@async2 Schedule(route.line, stop, timeLists[0], timeLists[1], timeLists[2])
   } catch (e: Exception) {
     requestCache.remove(cacheKey)
