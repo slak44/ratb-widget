@@ -74,11 +74,11 @@ fun getRoute(line: Int): Deferred<Route?> = async2(CommonPool) {
   val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=$line") ?: return@async2 null
   val doc = Jsoup.parse(text)
   val stops = doc.select(
-      "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map {
-    val name = it.child(1).child(0).text().split(' ').joinToString(" ") {
+      "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map { el ->
+    val name = el.child(1).child(0).text().split(' ').joinToString(" ") {
       it[0] + it.substring(1).toLowerCase()
     }
-    val link = it.child(0).child(0)
+    val link = el.child(0).child(0)
     val stopId = link.attr("href").split("=").last().toInt()
     return@map Stop(name, stopId)
   }
@@ -96,15 +96,15 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPo
       ?: return@async2 null
   val doc = Jsoup.parse(realResponse)
   try {
-    val timeLists = doc.select("table[border=\"1\"]").map {
-      if (it.child(0).child(1).text().startsWith("NU")) return@map Empty<TimeList>()
-      val dataRow = it.child(0).child(2)
+    val timeLists = doc.select("table[border=\"1\"]").map { el ->
+      if (el.child(0).child(1).text().startsWith("NU")) return@map Empty<TimeList>()
+      val dataRow = el.child(0).child(2)
       val list = mutableListOf<List<Int>>()
       // First is useless text, drop it
       // Rest are 0-23 hours
-      dataRow.children().drop(1).forEach {
-        if (it.children().isEmpty()) list.add(emptyList())
-        else list.add(it.textNodes().map { it.text().toInt() })
+      dataRow.children().drop(1).forEach { hourTimes ->
+        if (hourTimes.children().isEmpty()) list.add(emptyList())
+        else list.add(hourTimes.textNodes().map { it.text().toInt() })
       }
       return@map (list as TimeList).opt()
     }

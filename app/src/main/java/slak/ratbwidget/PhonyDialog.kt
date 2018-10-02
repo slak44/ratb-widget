@@ -47,7 +47,7 @@ class PhonyDialog : AppCompatActivity() {
 
   private fun runSelectStop(action: String): ListView {
     title = getString(R.string.select_stop_title)
-    val stops = intent.extras.getParcelableArrayList<Stop>(EXTRA_STOP_LIST)
+    val stops = intent!!.extras!!.getParcelableArrayList<Stop>(EXTRA_STOP_LIST)!!
     val listView = getInitialListView()
     listView.adapter = ArrayAdapter<String>(this, itemLayout, stops.map { it.name })
     listView.setOnItemClickListener { _, _, position, _ ->
@@ -66,7 +66,7 @@ class PhonyDialog : AppCompatActivity() {
       setContentView(when (intent.action) {
         ACTION_SELECT_LINE -> runSelectLine().await()
         ACTION_SELECT_STOP_TO,
-        ACTION_SELECT_STOP_FROM -> runSelectStop(intent.action)
+        ACTION_SELECT_STOP_FROM -> runSelectStop(intent!!.action!!)
         else -> throw IllegalStateException("Can't happen, lol")
       })
     }
