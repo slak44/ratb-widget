@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:id="@+id/root"
+    style="@style/AppTheme.Layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp"
+    tools:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="96dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/lineNumber"
+            style="@style/AppTheme.PrimaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical|center_horizontal|center"
+            android:textAppearance="@android:style/TextAppearance.Material"
+            tools:text="185"/>
+
+        <TextView
+            android:id="@+id/stop"
+            style="@style/AppTheme.PrimaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal|center"
+            android:duplicateParentState="true"
+            android:ellipsize="marquee"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:freezesText="true"
+            android:gravity="center_vertical|center_horizontal|center"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:scrollHorizontally="true"
+            android:singleLine="true"
+            tools:text="Brasov">
+
+            <requestFocus
+                android:duplicateParentState="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"/>
+        </TextView>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="fill_horizontal|center"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/prevTime"
+                style="@style/AppTheme.SecondaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginRight="16dp"
+                android:layout_weight="1"
+                android:gravity="right|center_vertical"
+                tools:ignore="RtlHardcoded"
+                tools:text="Prev: 15:55"/>
+
+            <TextView
+                android:id="@+id/nextTime"
+                style="@style/AppTheme.SecondaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="left|center_vertical|center"
+                tools:ignore="RtlHardcoded"
+                tools:text="Next: 16:20"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/route"
+            style="@style/AppTheme.SecondaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center"
+            android:gravity="center_vertical|center_horizontal|center"
+            tools:text="Ghencea → Cimitirul Ghencea 3"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/refreshBtn"
+            android:layout_width="24dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@null"
+            android:contentDescription="@string/refresh"
+            android:src="@drawable/ic_refresh_white_24dp"
+            app:srcCompat="@drawable/ic_refresh_white_24dp"/>
+
+        <ImageButton
+            android:id="@+id/swapDirBtn"
+            android:layout_width="24dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@null"
+            android:contentDescription="@string/rev_route"
+            android:src="@drawable/ic_compare_arrows_white_24dp"
+            app:srcCompat="@drawable/ic_compare_arrows_white_24dp"/>
+    </LinearLayout>
+
+</LinearLayout>

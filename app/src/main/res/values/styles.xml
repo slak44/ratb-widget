@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+    </style>
+    <color name="background">@color/primary_material_dark</color>
+    <color name="textPrimary">#ffffffff</color>
+    <color name="textSecondary">#b3ffffff</color>
+    <style name="AppTheme.Layout">
+        <item name="android:background">@color/background</item>
+    </style>
+    <style name="AppTheme.PrimaryText">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+    <style name="AppTheme.SecondaryText">
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+</resources>
