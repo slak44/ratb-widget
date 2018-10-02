@@ -40,6 +40,8 @@ sealed class Optional<E> {
    * @returns the optional's value
    */
   fun orElseThrow(th: Throwable): E = if (this is Empty) throw th else get()
+
+  override fun toString(): String = if (this is Empty) super.toString() else "Optional<${get()}>"
 }
 
 /** @see Optional */
