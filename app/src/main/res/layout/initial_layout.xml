@@ -130,6 +130,17 @@
             android:contentDescription="@string/rev_route"
             android:src="@drawable/ic_compare_arrows_white_24dp"
             app:srcCompat="@drawable/ic_compare_arrows_white_24dp"/>
+
+        <ImageButton
+            android:id="@+id/allMomentsBtn"
+            android:layout_width="24dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@null"
+            android:contentDescription="@string/all_moments"
+            android:src="@drawable/ic_open_in_new_white_24dp"
+            app:srcCompat="@drawable/ic_open_in_new_white_24dp"/>
+
     </LinearLayout>
 
 </LinearLayout>

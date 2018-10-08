@@ -6,7 +6,12 @@
     <string name="next_time">Next: %s, %s</string>
     <string name="refresh">Refresh</string>
     <string name="rev_route">Reverse Route</string>
+    <string name="all_moments">Display All Moments</string>
     <string name="select_line_title">Select Line</string>
     <string name="select_stop_title">Select Stop</string>
     <string name="default_title">Select</string>
+    <string name="daily_schedule">Daily</string>
+    <string name="saturday_schedule">Saturday</string>
+    <string name="sunday_schedule">Sunday</string>
+    <string name="schedule_for_title">Schedule for line %d, stop %s</string>
 </resources>

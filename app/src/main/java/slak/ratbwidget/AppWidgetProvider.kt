@@ -12,6 +12,7 @@ import android.util.Log
 import android.widget.RemoteViews
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
+import org.jetbrains.anko.startActivity
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
 
@@ -23,6 +24,8 @@ const val PREF_STOP_FROM = "pref_stop_from"
 fun SharedPreferences.isReverse() = getBoolean(PREF_DIR_REVERSE, false)
 fun SharedPreferences.lineNr() = getInt(PREF_LINE_NR, 185)
 fun SharedPreferences.stopId() = getInt(if (isReverse()) PREF_STOP_FROM else PREF_STOP_TO, 0)
+
+fun padNr(nr: Int): String = nr.toString().padStart(2, '0')
 
 class RATBWidgetProvider : AppWidgetProvider() {
   companion object {
@@ -37,12 +40,12 @@ class RATBWidgetProvider : AppWidgetProvider() {
     private const val ACTION_LINE_CHANGE = "blablabla action line change"
     private const val ACTION_TOGGLE_DIR = "toggle direction"
     private const val ACTION_STOP_CHANGE = "change_stop"
+    private const val ACTION_SHOW_ALL_SCHEDULE = "show all schedule"
 
     private val reqCodes = generateSequence(0) { it + 1 }
   }
 
   private fun showSchedule(context: Context, views: RemoteViews, schedule: Schedule) {
-    fun padNr(nr: Int): String = nr.toString().padStart(2, '0')
     fun buildTime(moment: Moment): String = "${padNr(moment / 100)}:${padNr(moment % 100)}"
     val now = ZonedDateTime.now(ZoneId.systemDefault())
     val currentMoment = now.hour * 100 + now.minute
@@ -100,10 +103,10 @@ class RATBWidgetProvider : AppWidgetProvider() {
         val newIntent = Intent(context, PhonyDialog::class.java)
         newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         newIntent.action = if (p.isReverse()) ACTION_SELECT_STOP_FROM else ACTION_SELECT_STOP_TO
-        newIntent.putParcelableArrayListExtra(EXTRA_STOP_LIST,
-            intent.getParcelableArrayListExtra(EXTRA_STOP_LIST))
+        newIntent.putParcelableArrayListExtra(EXTRA_STOP_LIST, intent.getParcelableArrayListExtra(EXTRA_STOP_LIST))
         context.startActivity(newIntent)
       }
+      ACTION_SHOW_ALL_SCHEDULE -> context.startActivity<ViewScheduleActivity>()
       else -> super.onReceive(context, intent)
     }
   }
@@ -115,6 +118,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
     buildIntent(context, views, ids, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
     buildIntent(context, views, ids, R.id.lineNumber) { it.action = ACTION_LINE_CHANGE }
     buildIntent(context, views, ids, R.id.swapDirBtn) { it.action = ACTION_TOGGLE_DIR }
+    buildIntent(context, views, ids, R.id.allMomentsBtn) { it.action = ACTION_SHOW_ALL_SCHEDULE }
 
     // Defaults
     views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.prev_time, "?"))
