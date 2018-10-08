@@ -90,7 +90,7 @@
                 android:layout_weight="1"
                 android:gravity="left|center_vertical|center"
                 tools:ignore="RtlHardcoded"
-                tools:text="Next: 16:20"/>
+                tools:text="Next: 16:20, 18:23"/>
 
         </LinearLayout>
 

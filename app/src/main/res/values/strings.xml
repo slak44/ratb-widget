@@ -3,7 +3,7 @@
     <string name="route">%s ➡ %s</string>
     <string name="prev_time">Prev: %s</string>
     <string name="not_available">N/A</string>
-    <string name="next_time">Next: %s</string>
+    <string name="next_time">Next: %s, %s</string>
     <string name="refresh">Refresh</string>
     <string name="rev_route">Reverse Route</string>
     <string name="select_line_title">Select Line</string>

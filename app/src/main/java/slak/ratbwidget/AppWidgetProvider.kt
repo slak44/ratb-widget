@@ -52,11 +52,13 @@ class RATBWidgetProvider : AppWidgetProvider() {
       return@showSchedule
     }.flatten()
     val nextIdx = moments.indices.firstOrNull { idx -> currentMoment < moments[idx] } ?: 0
+    val next2Idx = moments.indices.firstOrNull { idx -> moments[nextIdx] < moments[idx] } ?: 1
     val next = buildTime(moments[nextIdx])
+    val next2 = buildTime(moments[next2Idx])
     val prevIdx = if (nextIdx == 0) moments.size - 1 else nextIdx - 1
     val prev = buildTime(moments[prevIdx])
     views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.prev_time, prev))
-    views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, next))
+    views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, next, next2))
   }
 
   private fun showRoute(context: Context, views: RemoteViews, route: Route, reverse: Boolean) {
@@ -116,7 +118,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
 
     // Defaults
     views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.prev_time, "?"))
-    views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, "?"))
+    views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, "?", "?"))
     views.setTextViewText(R.id.route, context.resources.getString(R.string.route, "?", "?"))
 
     val line = p.lineNr()
