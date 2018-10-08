@@ -61,8 +61,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
 
   private fun showRoute(context: Context, views: RemoteViews, route: Route, reverse: Boolean) {
     val stops = if (reverse) route.stopsFrom else route.stopsTo
-    val routeText =
-        context.resources.getString(R.string.route, stops.first().name, stops.last().name)
+    val routeText = context.resources.getString(R.string.route, stops.first().name, stops.last().name)
     views.setTextViewText(R.id.route, routeText)
   }
 
@@ -107,15 +106,11 @@ class RATBWidgetProvider : AppWidgetProvider() {
     }
   }
 
-  override fun onUpdate(context: Context,
-                        appWidgetManager: AppWidgetManager,
-                        ids: IntArray) {
+  override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, ids: IntArray) {
     val p = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     val views = RemoteViews(context.packageName, R.layout.initial_layout)
 
-    buildIntent(context, views, ids, R.id.refreshBtn) {
-      it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-    }
+    buildIntent(context, views, ids, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
     buildIntent(context, views, ids, R.id.lineNumber) { it.action = ACTION_LINE_CHANGE }
     buildIntent(context, views, ids, R.id.swapDirBtn) { it.action = ACTION_TOGGLE_DIR }
 
