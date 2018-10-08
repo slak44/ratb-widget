@@ -51,7 +51,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
       views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.not_available))
       return@showSchedule
     }.flatten()
-    val nextIdx = moments.indices.firstOrNull { idx -> currentMoment <= moments[idx] } ?: 0
+    val nextIdx = moments.indices.firstOrNull { idx -> currentMoment < moments[idx] } ?: 0
     val next = buildTime(moments[nextIdx])
     val prevIdx = if (nextIdx == 0) moments.size - 1 else nextIdx - 1
     val prev = buildTime(moments[prevIdx])
