@@ -8,7 +8,9 @@ import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import org.threeten.bp.DayOfWeek
 
+/** Display the entire schedule of the current stop on the current route. */
 class ViewScheduleActivity : AppCompatActivity() {
+  /** Turn a [TimeList] from a [schedule] into text. */
   private fun buildScheduleText(dayOfWeek: DayOfWeek, schedule: Schedule): String {
     val timeList = schedule.pickList(dayOfWeek).orElse { return resources.getString(R.string.not_available) }
     return timeList.asSequence().mapIndexed { hour, minuteTimes ->

@@ -10,15 +10,20 @@ import org.threeten.bp.DayOfWeek
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
+/** Stores a list of hours, each hour containing a list of minutes. */
 typealias TimeList = List<List<Int>>
+/** Stores the data for a stop on a route. */
 @Parcelize
 data class Stop(val name: String, val stopId: Int) : Parcelable
+/** Stores data related to a particular route, and the stops on it. */
 data class Route(val line: Int, val stopsTo: List<Stop>, val stopsFrom: List<Stop>)
+/** Stores all the data required to build a schedule for any time. */
 data class Schedule(val line: Int,
                     val stop: Stop,
                     private val daily: Optional<TimeList>,
                     private val saturday: Optional<TimeList>,
                     private val sunday: Optional<TimeList>) {
+  /** Get the correct [TimeList] for the given [dayOfWeek]. */
   fun pickList(dayOfWeek: DayOfWeek) = when (dayOfWeek) {
     DayOfWeek.SATURDAY -> saturday
     DayOfWeek.SUNDAY -> sunday
@@ -26,8 +31,10 @@ data class Schedule(val line: Int,
   }
 }
 
+/** An [Int] of the form HHMM (hour, minute). */
 typealias Moment = Int
 
+/** Converts a [TimeList] to a list of [Moment]s. */
 fun TimeList.flatten(): List<Moment> {
   val flat = mutableListOf<Moment>()
   forEachIndexed { hour, hourList -> hourList.forEach { minute -> flat.add(hour * 100 + minute) } }
@@ -38,6 +45,7 @@ val requestCache = Cache<String>("Request", TimeUnit.DAYS.toMillis(7))
 private const val TAG = "Request"
 
 private var sessionCookie: String? = null
+/** Do black magic to obtain the text at the given [url]. */
 private fun doConnection(url: String): String {
   val urlObj = URL(url).openConnection()
   urlObj.setRequestProperty("Cookie", "PHPSESSID=$sessionCookie;")
@@ -52,6 +60,10 @@ private fun doConnection(url: String): String {
   return newText
 }
 
+/**
+ * Wrap error handling for [doConnection].
+ * @returns the text at [url] if successful, null otherwise
+ */
 private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String? {
   try {
     cacheKey.ifPresent {
@@ -69,6 +81,7 @@ private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String
   }
 }
 
+/** Fetch the [Route] for the given [line]. */
 fun getRoute(line: Int): Deferred<Route?> = async2(CommonPool) {
   // FIXME url may change based on line nr
   val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=$line") ?: return@async2 null
@@ -87,13 +100,15 @@ fun getRoute(line: Int): Deferred<Route?> = async2(CommonPool) {
   return@async2 Route(line, stopsTo, stopsFrom)
 }
 
+/** Fetch the [Schedule] for the given [route] and [stop]. */
 fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPool) {
-  // This is retarded, yes
+  // Everything about this site is retarded
   getData("http://www.ratb.ro/vv_statie.php?linie=${route.line}&statie=${stop.stopId}", Empty())
       ?: return@async2 null
   val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line} ${stop.stopId}"
   val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey.opt())
       ?: return@async2 null
+  // end retarded code
   val doc = Jsoup.parse(realResponse)
   try {
     val timeLists = doc.select("table[border=\"1\"]").map { el ->
@@ -123,6 +138,7 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPo
   }
 }
 
+/** Get a list of bus lines. */
 fun getBusList(): Deferred<List<Int>?> = async2(CommonPool) {
   val page = getData("http://www.ratb.ro/v_trasee.php") ?: return@async2 null
   val doc = Jsoup.parse(page)

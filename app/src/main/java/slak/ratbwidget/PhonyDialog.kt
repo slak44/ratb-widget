@@ -17,6 +17,7 @@ import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_FROM
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_TO
 import slak.ratbwidget.RATBWidgetProvider.Companion.EXTRA_STOP_LIST
 
+/** An activity themed as a dialog. */
 class PhonyDialog : AppCompatActivity() {
   companion object {
     private const val itemLayout = R.layout.select_dialog_singlechoice_material
@@ -24,6 +25,7 @@ class PhonyDialog : AppCompatActivity() {
 
   private lateinit var p: SharedPreferences
 
+  /** Create an empty [ListView] to add dialog options later. */
   private fun getInitialListView(): ListView {
     val lv = ListView(this)
     val padding = resources.getDimensionPixelSize(R.dimen.dialog_padding)
@@ -31,7 +33,8 @@ class PhonyDialog : AppCompatActivity() {
     return lv
   }
 
-  private fun runSelectLine(): Deferred<ListView> = async2(UI) {
+  /** Set the line selection dialog as the contentView. */
+  private fun runSelectLine() = launch(UI) {
     title = getString(R.string.select_line_title)
     val items = getBusList().await() ?: emptyList()
     val listView = getInitialListView()
@@ -42,10 +45,11 @@ class PhonyDialog : AppCompatActivity() {
       callUpdateWidgets()
       finish()
     }
-    return@async2 listView
+    setContentView(listView)
   }
 
-  private fun runSelectStop(action: String): ListView {
+  /** Set the stop selection dialog as the contentView. */
+  private fun runSelectStop(action: String) {
     title = getString(R.string.select_stop_title)
     val stops = intent!!.extras!!.getParcelableArrayList<Stop>(EXTRA_STOP_LIST)!!
     val listView = getInitialListView()
@@ -56,19 +60,16 @@ class PhonyDialog : AppCompatActivity() {
       callUpdateWidgets()
       finish()
     }
-    return listView
+    setContentView(listView)
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     p = PreferenceManager.getDefaultSharedPreferences(this@PhonyDialog)
-    launch(UI) {
-      setContentView(when (intent.action) {
-        ACTION_SELECT_LINE -> runSelectLine().await()
-        ACTION_SELECT_STOP_TO,
-        ACTION_SELECT_STOP_FROM -> runSelectStop(intent!!.action!!)
-        else -> throw IllegalStateException("Can't happen, lol")
-      })
+    when (intent.action) {
+      ACTION_SELECT_LINE -> runSelectLine()
+      ACTION_SELECT_STOP_TO, ACTION_SELECT_STOP_FROM -> runSelectStop(intent!!.action!!)
+      else -> throw IllegalStateException("Can't happen, lol")
     }
   }
 
@@ -77,12 +78,13 @@ class PhonyDialog : AppCompatActivity() {
     finish()
   }
 
+  /** Programatically update the widgets. */
   private fun callUpdateWidgets() {
     // From https://stackoverflow.com/a/7738687
-    val intent = Intent(this, RATBWidgetProvider::class.java)
+    val widgetProvider = RATBWidgetProvider::class.java
+    val intent = Intent(this, widgetProvider)
     intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-    val ids = AppWidgetManager.getInstance(application)
-        .getAppWidgetIds(ComponentName(application, RATBWidgetProvider::class.java))
+    val ids = AppWidgetManager.getInstance(application).getAppWidgetIds(ComponentName(application, widgetProvider))
     intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
     sendBroadcast(intent)
   }

@@ -45,6 +45,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
     private val reqCodes = generateSequence(0) { it + 1 }
   }
 
+  /** Update the [RemoteViews] content using the provided [Schedule]. */
   private fun showSchedule(context: Context, views: RemoteViews, schedule: Schedule) {
     fun buildTime(moment: Moment): String = "${padNr(moment / 100)}:${padNr(moment % 100)}"
     val now = ZonedDateTime.now(ZoneId.systemDefault())
@@ -64,12 +65,14 @@ class RATBWidgetProvider : AppWidgetProvider() {
     views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, next, next2))
   }
 
+  /** Update the [RemoteViews] content using the provided [Route]. */
   private fun showRoute(context: Context, views: RemoteViews, route: Route, reverse: Boolean) {
     val stops = if (reverse) route.stopsFrom else route.stopsTo
     val routeText = context.resources.getString(R.string.route, stops.first().name, stops.last().name)
     views.setTextViewText(R.id.route, routeText)
   }
 
+  /** Create an [Intent] based on the given parameters and set it as the click pending intent for the view at [id]. */
   private fun buildIntent(context: Context,
                           views: RemoteViews,
                           appWidgetIds: IntArray,
@@ -82,6 +85,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
         context, reqCodes.take(1).single(), intent, PendingIntent.FLAG_UPDATE_CURRENT))
   }
 
+  /** Manually call [onUpdate]. */
   private fun callUpdate(context: Context, appWidgetIds: IntArray) {
     onUpdate(context, AppWidgetManager.getInstance(context), appWidgetIds)
   }
@@ -130,7 +134,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
 
     launch(UI) {
       val route = getRoute(line).await() ?: return@launch
-      Log.d(TAG, "getRoute($line): $route")
+      Log.v(TAG, "getRoute($line): $route")
       showRoute(context, views, route, p.isReverse())
 
       val stops = if (p.isReverse()) route.stopsFrom else route.stopsTo
@@ -143,7 +147,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
       }
 
       val schedule = getSchedule(route, targetStop).await() ?: return@launch
-      Log.d(TAG, "getSchedule(<route>, $targetStop): $schedule")
+      Log.v(TAG, "getSchedule(<route>, $targetStop): $schedule")
       showSchedule(context, views, schedule)
     }.invokeOnCompletion {
       appWidgetManager.updateAppWidget(ids, views)
