@@ -6,12 +6,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.annotation.UiThread
 import android.support.v7.app.AppCompatActivity
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_LINE
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_FROM
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_TO
@@ -34,7 +33,8 @@ class PhonyDialog : AppCompatActivity() {
   }
 
   /** Set the line selection dialog as the contentView. */
-  private fun runSelectLine() = launch(UI) {
+  @UiThread
+  private suspend fun runSelectLine() {
     title = getString(R.string.select_line_title)
     val items = getBusList().await() ?: emptyList()
     val listView = getInitialListView()
@@ -67,7 +67,8 @@ class PhonyDialog : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     p = PreferenceManager.getDefaultSharedPreferences(this@PhonyDialog)
     when (intent.action) {
-      ACTION_SELECT_LINE -> runSelectLine()
+      // We can use runBlocking here because the UI is stuck waiting anyway
+      ACTION_SELECT_LINE -> runBlocking { runSelectLine() }
       ACTION_SELECT_STOP_TO, ACTION_SELECT_STOP_FROM -> runSelectStop(intent!!.action!!)
       else -> throw IllegalStateException("Can't happen, lol")
     }

@@ -3,8 +3,7 @@ package slak.ratbwidget
 import android.os.Parcelable
 import android.util.Log
 import kotlinx.android.parcel.Parcelize
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.*
 import org.jsoup.Jsoup
 import org.threeten.bp.DayOfWeek
 import java.net.URL
@@ -81,10 +80,12 @@ private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String
   }
 }
 
+val networkContext = newSingleThreadContext("NetworkThread")
+
 /** Fetch the [Route] for the given [line]. */
-fun getRoute(line: Int): Deferred<Route?> = async2(CommonPool) {
+fun getRoute(line: Int): Deferred<Route?> = GlobalScope.async(networkContext) {
   // FIXME url may change based on line nr
-  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=$line") ?: return@async2 null
+  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=$line") ?: return@async null
   val doc = Jsoup.parse(text)
   val stops = doc.select(
       "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map { el ->
@@ -97,17 +98,17 @@ fun getRoute(line: Int): Deferred<Route?> = async2(CommonPool) {
   }
   val stopsTo = stops.filter { it.stopId < 50 }
   val stopsFrom = stops.filter { it.stopId >= 50 }
-  return@async2 Route(line, stopsTo, stopsFrom)
+  return@async Route(line, stopsTo, stopsFrom)
 }
 
 /** Fetch the [Schedule] for the given [route] and [stop]. */
-fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPool) {
+fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.async(networkContext) {
   // Everything about this site is retarded
   getData("http://www.ratb.ro/vv_statie.php?linie=${route.line}&statie=${stop.stopId}", Empty())
-      ?: return@async2 null
+      ?: return@async null
   val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line} ${stop.stopId}"
   val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey.opt())
-      ?: return@async2 null
+      ?: return@async null
   // end retarded code
   val doc = Jsoup.parse(realResponse)
   try {
@@ -127,20 +128,20 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = async2(CommonPo
     if (timeLists.all { list -> list.orElse(emptyList()).all { it.isEmpty() } }) {
       requestCache.remove(cacheKey)
       Log.w(TAG, "Cache might be bad")
-      return@async2 getSchedule(route, stop).await()
+      return@async getSchedule(route, stop).await()
     }
-    return@async2 Schedule(route.line, stop, timeLists[0], timeLists[1], timeLists[2])
+    return@async Schedule(route.line, stop, timeLists[0], timeLists[1], timeLists[2])
   } catch (e: Exception) {
     requestCache.remove(cacheKey)
     Log.e(TAG, "error parsing schedule", e)
     Log.v(TAG, realResponse)
-    return@async2 null
+    return@async null
   }
 }
 
 /** Get a list of bus lines. */
-fun getBusList(): Deferred<List<Int>?> = async2(CommonPool) {
-  val page = getData("http://www.ratb.ro/v_trasee.php") ?: return@async2 null
+fun getBusList(): Deferred<List<Int>?> = GlobalScope.async(networkContext) {
+  val page = getData("http://www.ratb.ro/v_trasee.php") ?: return@async null
   val doc = Jsoup.parse(page)
   doc.select("select[name=\"tlin3\"] > option").drop(1).map { it.text().toInt() }
 }

@@ -10,6 +10,7 @@ import android.preference.PreferenceManager
 import android.support.annotation.IdRes
 import android.util.Log
 import android.widget.RemoteViews
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import org.jetbrains.anko.startActivity
@@ -132,7 +133,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
     val line = p.lineNr()
     views.setTextViewText(R.id.lineNumber, line.toString())
 
-    launch(UI) {
+    GlobalScope.launch(UI) {
       val route = getRoute(line).await() ?: return@launch
       Log.v(TAG, "getRoute($line): $route")
       showRoute(context, views, route, p.isReverse())

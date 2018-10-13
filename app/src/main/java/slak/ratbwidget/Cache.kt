@@ -1,7 +1,9 @@
 package slak.ratbwidget
 
 import android.util.Log
-import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.GlobalScope
+import kotlinx.coroutines.experimental.IO
 import kotlinx.coroutines.experimental.launch
 import java.io.*
 import java.util.concurrent.ConcurrentHashMap
@@ -29,9 +31,9 @@ class Cache<T : Serializable>(val name: String, val cacheTimeMs: Long) {
    * Read the serialized cache on disk and load it into memory, if possible. Does not try too hard.
    * @see serialize
    */
-  fun deserialize() = async2(CommonPool) {
+  fun deserialize() = GlobalScope.launch(Dispatchers.IO) {
     if (!cacheMapFile.exists()) {
-      return@async2
+      return@launch
     }
     val objIn = ObjectInputStream(FileInputStream(cacheMapFile))
     try {
@@ -50,12 +52,13 @@ class Cache<T : Serializable>(val name: String, val cacheTimeMs: Long) {
   }
 
   /** Check the expiration date of each item, and remove it if expired. */
-  fun purge() = launch(CommonPool) {
+  fun purge() {
     cache.entries.removeIf { isExpired(it.value.second) }
+    serialize()
   }
 
   /** Write the current serialized state of the cache to disk. */
-  fun serialize() = launch(CommonPool) {
+  fun serialize() = GlobalScope.launch(Dispatchers.IO) {
     val objOut = ObjectOutputStream(FileOutputStream(cacheMapFile))
     objOut.writeObject(cache)
     objOut.close()

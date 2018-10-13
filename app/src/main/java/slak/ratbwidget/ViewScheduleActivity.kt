@@ -4,8 +4,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_view_schedule.*
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
 import org.threeten.bp.DayOfWeek
 
 /** Display the entire schedule of the current stop on the current route. */
@@ -23,13 +22,13 @@ class ViewScheduleActivity : AppCompatActivity() {
     setContentView(R.layout.activity_view_schedule)
     setSupportActionBar(toolbar)
     val p = PreferenceManager.getDefaultSharedPreferences(this)
-    launch(UI) {
-      val route = getRoute(p.lineNr()).await() ?: return@launch finish()
+    runBlocking {
+      val route = getRoute(p.lineNr()).await() ?: return@runBlocking finish()
       val stops = if (p.isReverse()) route.stopsFrom else route.stopsTo
       val targetStop = stops.find { it.stopId == p.stopId() } ?: stops[0]
       title = getString(R.string.schedule_for_title, p.lineNr(), targetStop.name)
       supportActionBar!!.subtitle = getString(R.string.route, stops[0].name, stops.last().name)
-      val schedule = getSchedule(route, targetStop).await() ?: return@launch finish()
+      val schedule = getSchedule(route, targetStop).await() ?: return@runBlocking finish()
       dailySchedule.text = buildScheduleText(DayOfWeek.MONDAY, schedule)
       saturdaySchedule.text = buildScheduleText(DayOfWeek.SATURDAY, schedule)
       sundaySchedule.text = buildScheduleText(DayOfWeek.SUNDAY, schedule)
