@@ -79,20 +79,20 @@ class Cache<T : Serializable>(val name: String, val cacheTimeMs: Long) {
    * Attempt to get the cached value for a given key. If it doesn't exist or is expired, [Empty] is
    * returned instead.
    */
-  fun hit(key: String): Optional<T> {
+  fun hit(key: String): T? {
     if (cache[key] == null) {
       Log.d(TAG, "Cache missed: $key")
-      return Empty()
+      return null
     }
     if (isExpired(cache[key]!!.second)) {
       // Cache expired; remove and return nothing
       Log.d(TAG, "Cache expired: $key")
       cache.remove(key)
       serialize()
-      return Empty()
+      return null
     }
     Log.d(TAG, "Cache hit: $key")
-    return cache[key]!!.first.opt()
+    return cache[key]!!.first
   }
 
   /** Clears both the in-memory map, and deletes the file on disk holding the cache. */

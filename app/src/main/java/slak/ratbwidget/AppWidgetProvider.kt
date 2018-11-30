@@ -40,11 +40,12 @@ class RATBWidgetProvider : AppWidgetProvider() {
     fun buildTime(moment: Moment): String = "${padNr(moment.t / 100)}:${padNr(moment.t % 100)}"
     val now = ZonedDateTime.now(ZoneId.systemDefault())
     val currentMoment = Moment(now.hour * 100 + now.minute)
-    val moments = schedule.pickList(now.dayOfWeek).orElse {
+    val moments = schedule.pickList(now.dayOfWeek).let {
+      if (it != null) return@let it
       views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.not_available))
       views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.not_available))
       return@showSchedule
-    }.flatten()
+    }!!.flatten()
     val nextIdx = moments.indices.firstOrNull { idx -> currentMoment < moments[idx] } ?: 0
     val next2Idx = moments.indices.firstOrNull { idx -> moments[nextIdx] < moments[idx] } ?: 1
     val next = buildTime(moments[nextIdx])

@@ -29,9 +29,9 @@ data class Route(val line: Line, val stopsTo: List<Stop>, val stopsFrom: List<St
 /** Stores all the data required to build a schedule for any time. */
 data class Schedule(val line: Line,
                     val stop: Stop,
-                    private val daily: Optional<TimeList>,
-                    private val saturday: Optional<TimeList>,
-                    private val sunday: Optional<TimeList>) {
+                    private val daily: TimeList?,
+                    private val saturday: TimeList?,
+                    private val sunday: TimeList?) {
   /** Get the correct [TimeList] for the given [dayOfWeek]. */
   fun pickList(dayOfWeek: DayOfWeek) = when (dayOfWeek) {
     DayOfWeek.SATURDAY -> saturday
@@ -76,18 +76,23 @@ private fun doConnection(url: String): String {
  * Wrap error handling for [doConnection].
  * @returns the text at [url] if successful, null otherwise
  */
-private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String? {
+private fun getData(url: String, cacheKey: String? = url): String? {
   try {
-    cacheKey.ifPresent {
-      return@getData requestCache.hit(it).orElse {
-        val newText = doConnection(url)
-        requestCache.update(it, newText)
-        return@orElse newText
+    if (cacheKey != null) {
+      return requestCache.hit(cacheKey).let {
+        if (it == null) {
+          val newText = doConnection(url)
+          requestCache.update(cacheKey, newText)
+          return@let newText
+        } else {
+          return@let it
+        }
       }
+    } else {
+      return doConnection(url)
     }
-    return doConnection(url)
   } catch (t: Exception) {
-    cacheKey.ifPresent { requestCache.remove(it) }
+    if (cacheKey != null) requestCache.remove(cacheKey)
     Log.e(TAG, "error fetching data", t)
     return null
   }
@@ -116,16 +121,16 @@ fun getRoute(line: Line): Deferred<Route?> = GlobalScope.async(networkContext) {
 /** Fetch the [Schedule] for the given [route] and [stop]. */
 fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.async(networkContext) {
   // Everything about this site is retarded
-  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", Empty())
+  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", null)
       ?: return@async null
   val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line.nr} ${stop.stopId.id}"
-  val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey.opt())
+  val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey)
       ?: return@async null
   // end retarded code
   val doc = Jsoup.parse(realResponse)
   try {
     val timeLists = doc.select("table[border=\"1\"]").map { el ->
-      if (el.child(0).child(1).text().startsWith("NU")) return@map Empty<TimeList>()
+      if (el.child(0).child(1).text().startsWith("NU")) return@map null
       val dataRow = el.child(0).child(2)
       val list = mutableListOf<List<Int>>()
       // First is useless text, drop it
@@ -134,10 +139,10 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.asy
         if (hourTimes.children().isEmpty()) list.add(emptyList())
         else list.add(hourTimes.textNodes().map { it.text().toInt() })
       }
-      return@map (list as TimeList).opt()
+      return@map list as TimeList
     }
     // The cache might be fucked if this is true
-    if (timeLists.all { list -> list.orElse(emptyList()).all { it.isEmpty() } }) {
+    if (timeLists.all { list -> (list ?: emptyList()).all { it.isEmpty() } }) {
       requestCache.remove(cacheKey)
       Log.w(TAG, "Cache might be bad")
       return@async getSchedule(route, stop).await()

@@ -11,7 +11,7 @@ import slak.ratbwidget.RATBWidgetProvider.Companion.EXTRA_WIDGET_ID
 class ViewScheduleActivity : AppCompatActivity() {
   /** Turn a [TimeList] from a [schedule] into text. */
   private fun buildScheduleText(dayOfWeek: DayOfWeek, schedule: Schedule): String {
-    val timeList = schedule.pickList(dayOfWeek).orElse { return resources.getString(R.string.not_available) }
+    val timeList = schedule.pickList(dayOfWeek) ?: return resources.getString(R.string.not_available)
     return timeList.asSequence().mapIndexed { hour, minuteTimes ->
       "${padNr(hour)}:00    " + minuteTimes.joinToString(", ") { "${padNr(hour)}:${padNr(it)}" }
     }.joinToString("\n")
