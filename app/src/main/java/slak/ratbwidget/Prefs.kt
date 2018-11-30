@@ -19,14 +19,17 @@ private const val PREF_LINE_NR = "pref_LINENR"
 private const val PREF_STOP_TO = "pref_stop_to"
 private const val PREF_STOP_FROM = "pref_stop_from"
 
-var SharedPreferences.lineNr: Int
-  get() = getInt(PREF_LINE_NR, 185)
-  set(value) = use { putInt(PREF_LINE_NR, value) }
+private fun lineNrPrefKey(widgetId: Int) = "$PREF_LINE_NR$widgetId"
+fun SharedPreferences.lineNr(widgetId: Int): Line = Line(getInt(lineNrPrefKey(widgetId), 185))
+fun SharedPreferences.setLineNr(widgetId: Int, line: Line) = use { putInt(lineNrPrefKey(widgetId), line.nr) }
 
-fun SharedPreferences.isReverse(lineNr: Int) = getBoolean("$PREF_DIR_REVERSE$lineNr", false)
-fun SharedPreferences.toggleIsReverse(lineNr: Int) = use { putBoolean("$PREF_DIR_REVERSE$lineNr", !isReverse(lineNr)) }
+private fun revPrefKey(widgetId: Int, line: Line) = "$PREF_DIR_REVERSE${line.nr}$widgetId"
+fun SharedPreferences.isReverse(widgetId: Int, line: Line) = getBoolean(revPrefKey(widgetId, line), false)
+fun SharedPreferences.toggleIsReverse(widgetId: Int, line: Line) =
+    use { putBoolean(revPrefKey(widgetId, line), !isReverse(widgetId, line)) }
 
-private fun SharedPreferences.stopPrefKey(lineNr: Int) =
-    if (isReverse(lineNr)) "$PREF_STOP_FROM$lineNr" else "$PREF_STOP_TO$lineNr"
-fun SharedPreferences.stopId(lineNr: Int) = getInt(stopPrefKey(lineNr), 0)
-fun SharedPreferences.setStopId(lineNr: Int, stopId: Int) = use { putInt(stopPrefKey(lineNr), stopId) }
+private fun SharedPreferences.stopPrefKey(widgetId: Int, line: Line) =
+    if (isReverse(widgetId, line)) "$PREF_STOP_FROM${line.nr}$widgetId" else "$PREF_STOP_TO${line.nr}$widgetId"
+fun SharedPreferences.stopId(widgetId: Int, line: Line) = StopId(getInt(stopPrefKey(widgetId, line), 0))
+fun SharedPreferences.setStopId(widgetId: Int, line: Line, stopId: StopId) =
+    use { putInt(stopPrefKey(widgetId, line), stopId.id) }

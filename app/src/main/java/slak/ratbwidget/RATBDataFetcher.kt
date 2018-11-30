@@ -12,13 +12,19 @@ import java.util.concurrent.TimeUnit
 
 /** Stores a list of hours, each hour containing a list of minutes. */
 typealias TimeList = List<List<Int>>
+/** Identifies a stop in the remote data set. */
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
+inline class StopId(val id: Int)
 /** Stores the data for a stop on a route. */
 @Parcelize
-data class Stop(val name: String, val stopId: Int) : Parcelable
+data class Stop(val name: String, val stopId: StopId) : Parcelable
+/** The number of a line. */
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
+inline class Line(val nr: Int)
 /** Stores data related to a particular route, and the stops on it. */
-data class Route(val line: Int, val stopsTo: List<Stop>, val stopsFrom: List<Stop>)
+data class Route(val line: Line, val stopsTo: List<Stop>, val stopsFrom: List<Stop>)
 /** Stores all the data required to build a schedule for any time. */
-data class Schedule(val line: Int,
+data class Schedule(val line: Line,
                     val stop: Stop,
                     private val daily: Optional<TimeList>,
                     private val saturday: Optional<TimeList>,
@@ -32,12 +38,15 @@ data class Schedule(val line: Int,
 }
 
 /** An [Int] of the form HHMM (hour, minute). */
-typealias Moment = Int
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
+inline class Moment(val t: Int) : Comparable<Moment> {
+  override fun compareTo(other: Moment): Int = t.compareTo(other.t)
+}
 
 /** Converts a [TimeList] to a list of [Moment]s. */
 fun TimeList.flatten(): List<Moment> {
   val flat = mutableListOf<Moment>()
-  forEachIndexed { hour, hourList -> hourList.forEach { minute -> flat.add(hour * 100 + minute) } }
+  forEachIndexed { hour, hourList -> hourList.forEach { minute -> flat.add(Moment(hour * 100 + minute)) } }
   return flat
 }
 
@@ -84,9 +93,8 @@ private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String
 val networkContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 /** Fetch the [Route] for the given [line]. */
-fun getRoute(line: Int): Deferred<Route?> = GlobalScope.async(networkContext) {
-  // FIXME url may change based on line nr
-  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=$line") ?: return@async null
+fun getRoute(line: Line): Deferred<Route?> = GlobalScope.async(networkContext) {
+  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=${line.nr}") ?: return@async null
   val doc = Jsoup.parse(text)
   val stops = doc.select(
       "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map { el ->
@@ -95,19 +103,19 @@ fun getRoute(line: Int): Deferred<Route?> = GlobalScope.async(networkContext) {
     }
     val link = el.child(0).child(0)
     val stopId = link.attr("href").split("=").last().toInt()
-    return@map Stop(name, stopId)
+    return@map Stop(name, StopId(stopId))
   }
-  val stopsTo = stops.filter { it.stopId < 50 }
-  val stopsFrom = stops.filter { it.stopId >= 50 }
+  val stopsTo = stops.filter { it.stopId.id < 50 }
+  val stopsFrom = stops.filter { it.stopId.id >= 50 }
   return@async Route(line, stopsTo, stopsFrom)
 }
 
 /** Fetch the [Schedule] for the given [route] and [stop]. */
 fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.async(networkContext) {
   // Everything about this site is retarded
-  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line}&statie=${stop.stopId}", Empty())
+  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", Empty())
       ?: return@async null
-  val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line} ${stop.stopId}"
+  val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line.nr} ${stop.stopId.id}"
   val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey.opt())
       ?: return@async null
   // end retarded code

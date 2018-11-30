@@ -16,6 +16,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            kotlinOptions {
+                freeCompilerArgs = ["-XXLanguage:+InlineClasses"]
+            }
         }
     }
 }
@@ -53,9 +56,4 @@ dependencies {
 
 androidExtensions {
     experimental = true
-}
-kotlin {
-    experimental {
-        coroutines "enable"
-    }
 }

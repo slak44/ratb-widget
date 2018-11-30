@@ -11,7 +11,7 @@ import android.widget.RemoteViews
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.intentFor
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
 
@@ -22,23 +22,24 @@ class RATBWidgetProvider : AppWidgetProvider() {
     private const val TAG = "RATBWidgetProvider"
 
     const val EXTRA_STOP_LIST = "extra_stop_list"
+    const val EXTRA_WIDGET_ID = "widget_id"
 
-    const val ACTION_SELECT_LINE = "select line"
-    const val ACTION_SELECT_STOP = "select stop"
+    const val ACTION_SELECT_LINE = "select_line"
+    const val ACTION_SELECT_STOP = "select_stop"
 
-    private const val ACTION_LINE_CHANGE = "blablabla action line change"
-    private const val ACTION_TOGGLE_DIR = "toggle direction"
+    private const val ACTION_LINE_CHANGE = "action_line_change"
+    private const val ACTION_TOGGLE_DIR = "toggle_direction"
     private const val ACTION_STOP_CHANGE = "change_stop"
-    private const val ACTION_SHOW_ALL_SCHEDULE = "show all schedule"
+    private const val ACTION_SHOW_ALL_SCHEDULE = "show_all_schedule"
 
     private val reqCodes = generateSequence(0) { it + 1 }
   }
 
   /** Update the [RemoteViews] content using the provided [Schedule]. */
   private fun showSchedule(context: Context, views: RemoteViews, schedule: Schedule) {
-    fun buildTime(moment: Moment): String = "${padNr(moment / 100)}:${padNr(moment % 100)}"
+    fun buildTime(moment: Moment): String = "${padNr(moment.t / 100)}:${padNr(moment.t % 100)}"
     val now = ZonedDateTime.now(ZoneId.systemDefault())
-    val currentMoment = now.hour * 100 + now.minute
+    val currentMoment = Moment(now.hour * 100 + now.minute)
     val moments = schedule.pickList(now.dayOfWeek).orElse {
       views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.not_available))
       views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.not_available))
@@ -64,11 +65,11 @@ class RATBWidgetProvider : AppWidgetProvider() {
   /** Create an [Intent] based on the given parameters and set it as the click pending intent for the view at [id]. */
   private fun buildIntent(context: Context,
                           views: RemoteViews,
-                          appWidgetIds: IntArray,
+                          appWidgetId: Int,
                           @IdRes id: Int,
                           use: (Intent) -> Unit = {}) {
     val intent = Intent(context, this@RATBWidgetProvider::class.java)
-    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetId)
     use(intent)
     views.setOnClickPendingIntent(id, PendingIntent.getBroadcast(
         context, reqCodes.take(1).single(), intent, PendingIntent.FLAG_UPDATE_CURRENT))
@@ -80,55 +81,62 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   override fun onReceive(context: Context, intent: Intent) {
+    val id = intent.getIntExtra(EXTRA_WIDGET_ID, 0)
     when (intent.action) {
       ACTION_TOGGLE_DIR -> {
-        context.p.toggleIsReverse(context.p.lineNr)
-        callUpdate(context, intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS))
+        context.p.toggleIsReverse(id, context.p.lineNr(id))
+        callUpdate(context, intArrayOf(id))
       }
       ACTION_LINE_CHANGE -> {
-        val newIntent = Intent(context, PhonyDialog::class.java)
+        val newIntent = context.intentFor<PhonyDialog>()
         newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         newIntent.action = ACTION_SELECT_LINE
+        newIntent.putExtra(EXTRA_WIDGET_ID, id)
         context.startActivity(newIntent)
       }
       ACTION_STOP_CHANGE -> {
-        val newIntent = Intent(context, PhonyDialog::class.java)
+        val newIntent = context.intentFor<PhonyDialog>()
         newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         newIntent.action = ACTION_SELECT_STOP
+        newIntent.putExtra(EXTRA_WIDGET_ID, id)
         newIntent.putParcelableArrayListExtra(EXTRA_STOP_LIST, intent.getParcelableArrayListExtra(EXTRA_STOP_LIST))
         context.startActivity(newIntent)
       }
-      ACTION_SHOW_ALL_SCHEDULE -> context.startActivity<ViewScheduleActivity>()
+      ACTION_SHOW_ALL_SCHEDULE -> {
+        val newIntent = context.intentFor<ViewScheduleActivity>()
+        newIntent.putExtra(EXTRA_WIDGET_ID, id)
+        context.startActivity(newIntent)
+      }
       else -> super.onReceive(context, intent)
     }
   }
 
-  override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, ids: IntArray) {
+  private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, id: Int) {
     val views = RemoteViews(context.packageName, R.layout.initial_layout)
 
-    buildIntent(context, views, ids, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
-    buildIntent(context, views, ids, R.id.lineNumber) { it.action = ACTION_LINE_CHANGE }
-    buildIntent(context, views, ids, R.id.swapDirBtn) { it.action = ACTION_TOGGLE_DIR }
-    buildIntent(context, views, ids, R.id.allMomentsBtn) { it.action = ACTION_SHOW_ALL_SCHEDULE }
+    buildIntent(context, views, id, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
+    buildIntent(context, views, id, R.id.lineNumber) { it.action = ACTION_LINE_CHANGE }
+    buildIntent(context, views, id, R.id.swapDirBtn) { it.action = ACTION_TOGGLE_DIR }
+    buildIntent(context, views, id, R.id.allMomentsBtn) { it.action = ACTION_SHOW_ALL_SCHEDULE }
 
     // Defaults
     views.setTextViewText(R.id.prevTime, context.resources.getString(R.string.prev_time, "?"))
     views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, "?", "?"))
     views.setTextViewText(R.id.route, context.resources.getString(R.string.route, "?", "?"))
 
-    val line = context.p.lineNr
-    views.setTextViewText(R.id.lineNumber, line.toString())
+    val line = context.p.lineNr(id)
+    views.setTextViewText(R.id.lineNumber, line.nr.toString())
 
     GlobalScope.launch(Dispatchers.Main) {
       val route = getRoute(line).await() ?: return@launch
       Log.v(TAG, "getRoute($line): $route")
-      showRoute(context, views, route, context.p.isReverse(line))
+      showRoute(context, views, route, context.p.isReverse(id, line))
 
-      val stops = if (context.p.isReverse(line)) route.stopsFrom else route.stopsTo
-      val targetStop = stops.find { it.stopId == context.p.stopId(line) } ?: stops[0]
+      val stops = if (context.p.isReverse(id, line)) route.stopsFrom else route.stopsTo
+      val targetStop = stops.find { it.stopId == context.p.stopId(id, line) } ?: stops[0]
       views.setTextViewText(R.id.stop, targetStop.name)
 
-      buildIntent(context, views, ids, R.id.stop) {
+      buildIntent(context, views, id, R.id.stop) {
         it.action = ACTION_STOP_CHANGE
         it.putParcelableArrayListExtra(EXTRA_STOP_LIST, ArrayList(stops))
       }
@@ -137,7 +145,11 @@ class RATBWidgetProvider : AppWidgetProvider() {
       Log.v(TAG, "getSchedule(<route>, $targetStop): $schedule")
       showSchedule(context, views, schedule)
     }.invokeOnCompletion {
-      appWidgetManager.updateAppWidget(ids, views)
+      appWidgetManager.updateAppWidget(intArrayOf(id), views)
     }
+  }
+
+  override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, ids: IntArray) {
+    ids.forEach { updateWidget(context, appWidgetManager, it) }
   }
 }

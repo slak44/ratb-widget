@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_view_schedule.*
 import kotlinx.coroutines.runBlocking
 import org.threeten.bp.DayOfWeek
+import slak.ratbwidget.RATBWidgetProvider.Companion.EXTRA_WIDGET_ID
 
 /** Display the entire schedule of the current stop on the current route. */
 class ViewScheduleActivity : AppCompatActivity() {
@@ -20,11 +21,12 @@ class ViewScheduleActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_view_schedule)
     setSupportActionBar(toolbar)
+    val id = intent.getIntExtra(EXTRA_WIDGET_ID, 0)
     runBlocking {
-      val line = p.lineNr
+      val line = p.lineNr(id)
       val route = getRoute(line).await() ?: return@runBlocking finish()
-      val stops = if (p.isReverse(line)) route.stopsFrom else route.stopsTo
-      val targetStop = stops.find { it.stopId == p.stopId(line) } ?: stops[0]
+      val stops = if (p.isReverse(id, line)) route.stopsFrom else route.stopsTo
+      val targetStop = stops.find { it.stopId == p.stopId(id, line) } ?: stops[0]
       title = getString(R.string.schedule_for_title, line, targetStop.name)
       supportActionBar!!.subtitle = getString(R.string.route, stops[0].name, stops.last().name)
       val schedule = getSchedule(route, targetStop).await() ?: return@runBlocking finish()
