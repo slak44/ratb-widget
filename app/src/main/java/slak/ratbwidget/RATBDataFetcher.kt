@@ -3,10 +3,11 @@ package slak.ratbwidget
 import android.os.Parcelable
 import android.util.Log
 import kotlinx.android.parcel.Parcelize
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 import org.jsoup.Jsoup
 import org.threeten.bp.DayOfWeek
 import java.net.URL
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /** Stores a list of hours, each hour containing a list of minutes. */
@@ -80,7 +81,7 @@ private fun getData(url: String, cacheKey: Optional<String> = url.opt()): String
   }
 }
 
-val networkContext = newSingleThreadContext("NetworkThread")
+val networkContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 /** Fetch the [Route] for the given [line]. */
 fun getRoute(line: Int): Deferred<Route?> = GlobalScope.async(networkContext) {

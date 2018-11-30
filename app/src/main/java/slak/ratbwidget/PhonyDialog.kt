@@ -10,7 +10,7 @@ import android.support.annotation.UiThread
 import android.support.v7.app.AppCompatActivity
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_LINE
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_FROM
 import slak.ratbwidget.RATBWidgetProvider.Companion.ACTION_SELECT_STOP_TO

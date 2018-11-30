@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_view_schedule.*
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.threeten.bp.DayOfWeek
 
 /** Display the entire schedule of the current stop on the current route. */
