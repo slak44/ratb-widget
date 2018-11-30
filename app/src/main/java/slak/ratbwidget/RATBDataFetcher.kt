@@ -3,7 +3,10 @@ package slak.ratbwidget
 import android.os.Parcelable
 import android.util.Log
 import kotlinx.android.parcel.Parcelize
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import org.jsoup.Jsoup
 import org.threeten.bp.DayOfWeek
 import java.net.URL
@@ -13,8 +16,8 @@ import java.util.concurrent.TimeUnit
 /** Stores a list of hours, each hour containing a list of minutes. */
 typealias TimeList = List<List<Int>>
 /** Identifies a stop in the remote data set. */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
-inline class StopId(val id: Int)
+@Parcelize
+data class StopId(val id: Int) : Parcelable
 /** Stores the data for a stop on a route. */
 @Parcelize
 data class Stop(val name: String, val stopId: StopId) : Parcelable

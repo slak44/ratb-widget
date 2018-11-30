@@ -69,7 +69,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
                           @IdRes id: Int,
                           use: (Intent) -> Unit = {}) {
     val intent = Intent(context, this@RATBWidgetProvider::class.java)
-    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetId)
+    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
     use(intent)
     views.setOnClickPendingIntent(id, PendingIntent.getBroadcast(
         context, reqCodes.take(1).single(), intent, PendingIntent.FLAG_UPDATE_CURRENT))
@@ -81,10 +81,10 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   override fun onReceive(context: Context, intent: Intent) {
-    val id = intent.getIntExtra(EXTRA_WIDGET_ID, 0)
+    val id = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS)?.get(0)
     when (intent.action) {
       ACTION_TOGGLE_DIR -> {
-        context.p.toggleIsReverse(id, context.p.lineNr(id))
+        context.p.toggleIsReverse(id!!, context.p.lineNr(id))
         callUpdate(context, intArrayOf(id))
       }
       ACTION_LINE_CHANGE -> {
@@ -112,6 +112,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, id: Int) {
+    Log.v(TAG, "Updating widget $id")
     val views = RemoteViews(context.packageName, R.layout.initial_layout)
 
     buildIntent(context, views, id, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
