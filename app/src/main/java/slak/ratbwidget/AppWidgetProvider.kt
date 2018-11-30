@@ -5,8 +5,6 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.preference.PreferenceManager
 import android.support.annotation.IdRes
 import android.util.Log
 import android.widget.RemoteViews
@@ -17,15 +15,6 @@ import org.jetbrains.anko.startActivity
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
 
-private const val PREF_DIR_REVERSE = "dir_reverse"
-const val PREF_LINE_NR = "pref_LINENR"
-const val PREF_STOP_TO = "pref_stop_to"
-const val PREF_STOP_FROM = "pref_stop_from"
-
-fun SharedPreferences.isReverse() = getBoolean(PREF_DIR_REVERSE, false)
-fun SharedPreferences.lineNr() = getInt(PREF_LINE_NR, 185)
-fun SharedPreferences.stopId() = getInt(if (isReverse()) PREF_STOP_FROM else PREF_STOP_TO, 0)
-
 fun padNr(nr: Int): String = nr.toString().padStart(2, '0')
 
 class RATBWidgetProvider : AppWidgetProvider() {
@@ -35,8 +24,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
     const val EXTRA_STOP_LIST = "extra_stop_list"
 
     const val ACTION_SELECT_LINE = "select line"
-    const val ACTION_SELECT_STOP_TO = "select stop to"
-    const val ACTION_SELECT_STOP_FROM = "select stop from"
+    const val ACTION_SELECT_STOP = "select stop"
 
     private const val ACTION_LINE_CHANGE = "blablabla action line change"
     private const val ACTION_TOGGLE_DIR = "toggle direction"
@@ -92,10 +80,9 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   override fun onReceive(context: Context, intent: Intent) {
-    val p = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     when (intent.action) {
       ACTION_TOGGLE_DIR -> {
-        p.use { putBoolean(PREF_DIR_REVERSE, !p.isReverse()) }
+        context.p.toggleIsReverse(context.p.lineNr)
         callUpdate(context, intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS))
       }
       ACTION_LINE_CHANGE -> {
@@ -107,7 +94,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
       ACTION_STOP_CHANGE -> {
         val newIntent = Intent(context, PhonyDialog::class.java)
         newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-        newIntent.action = if (p.isReverse()) ACTION_SELECT_STOP_FROM else ACTION_SELECT_STOP_TO
+        newIntent.action = ACTION_SELECT_STOP
         newIntent.putParcelableArrayListExtra(EXTRA_STOP_LIST, intent.getParcelableArrayListExtra(EXTRA_STOP_LIST))
         context.startActivity(newIntent)
       }
@@ -117,7 +104,6 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, ids: IntArray) {
-    val p = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     val views = RemoteViews(context.packageName, R.layout.initial_layout)
 
     buildIntent(context, views, ids, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
@@ -130,16 +116,16 @@ class RATBWidgetProvider : AppWidgetProvider() {
     views.setTextViewText(R.id.nextTime, context.resources.getString(R.string.next_time, "?", "?"))
     views.setTextViewText(R.id.route, context.resources.getString(R.string.route, "?", "?"))
 
-    val line = p.lineNr()
+    val line = context.p.lineNr
     views.setTextViewText(R.id.lineNumber, line.toString())
 
     GlobalScope.launch(Dispatchers.Main) {
       val route = getRoute(line).await() ?: return@launch
       Log.v(TAG, "getRoute($line): $route")
-      showRoute(context, views, route, p.isReverse())
+      showRoute(context, views, route, context.p.isReverse(line))
 
-      val stops = if (p.isReverse()) route.stopsFrom else route.stopsTo
-      val targetStop = stops.find { it.stopId == p.stopId() } ?: stops[0]
+      val stops = if (context.p.isReverse(line)) route.stopsFrom else route.stopsTo
+      val targetStop = stops.find { it.stopId == context.p.stopId(line) } ?: stops[0]
       views.setTextViewText(R.id.stop, targetStop.name)
 
       buildIntent(context, views, ids, R.id.stop) {

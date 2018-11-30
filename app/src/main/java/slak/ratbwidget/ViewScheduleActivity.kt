@@ -1,7 +1,6 @@
 package slak.ratbwidget
 
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_view_schedule.*
 import kotlinx.coroutines.runBlocking
@@ -21,12 +20,12 @@ class ViewScheduleActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_view_schedule)
     setSupportActionBar(toolbar)
-    val p = PreferenceManager.getDefaultSharedPreferences(this)
     runBlocking {
-      val route = getRoute(p.lineNr()).await() ?: return@runBlocking finish()
-      val stops = if (p.isReverse()) route.stopsFrom else route.stopsTo
-      val targetStop = stops.find { it.stopId == p.stopId() } ?: stops[0]
-      title = getString(R.string.schedule_for_title, p.lineNr(), targetStop.name)
+      val line = p.lineNr
+      val route = getRoute(line).await() ?: return@runBlocking finish()
+      val stops = if (p.isReverse(line)) route.stopsFrom else route.stopsTo
+      val targetStop = stops.find { it.stopId == p.stopId(line) } ?: stops[0]
+      title = getString(R.string.schedule_for_title, line, targetStop.name)
       supportActionBar!!.subtitle = getString(R.string.route, stops[0].name, stops.last().name)
       val schedule = getSchedule(route, targetStop).await() ?: return@runBlocking finish()
       dailySchedule.text = buildScheduleText(DayOfWeek.MONDAY, schedule)
