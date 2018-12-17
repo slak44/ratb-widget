@@ -27,7 +27,7 @@ class ViewScheduleActivity : AppCompatActivity() {
       val route = getRoute(line).await() ?: return@runBlocking finish()
       val stops = if (p.isReverse(id, line)) route.stopsFrom else route.stopsTo
       val targetStop = stops.find { it.stopId == p.stopId(id, line) } ?: stops[0]
-      title = getString(R.string.schedule_for_title, line, targetStop.name)
+      title = getString(R.string.schedule_for_title, line.nr, targetStop.name)
       supportActionBar!!.subtitle = getString(R.string.route, stops[0].name, stops.last().name)
       val schedule = getSchedule(route, targetStop).await() ?: return@runBlocking finish()
       dailySchedule.text = buildScheduleText(DayOfWeek.MONDAY, schedule)
