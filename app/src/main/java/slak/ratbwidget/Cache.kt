@@ -44,7 +44,7 @@ class Cache<T : Serializable>(val name: String, val cacheTimeMs: Long) {
     } catch (ex: Throwable) {
       // Ignore errors with the cache; don't crash the app because of it
       cacheMapFile.delete()
-      Log.d(TAG, "Cache load error, deleting cache")
+      Log.w(TAG, "Cache load error, deleting cache")
     } finally {
       objIn.close()
     }
@@ -81,17 +81,17 @@ class Cache<T : Serializable>(val name: String, val cacheTimeMs: Long) {
    */
   fun hit(key: String): T? {
     if (cache[key] == null) {
-      Log.d(TAG, "Cache missed: $key")
+      Log.v(TAG, "Cache missed: $key")
       return null
     }
     if (isExpired(cache[key]!!.second)) {
       // Cache expired; remove and return nothing
-      Log.d(TAG, "Cache expired: $key")
+      Log.v(TAG, "Cache expired: $key")
       cache.remove(key)
       serialize()
       return null
     }
-    Log.d(TAG, "Cache hit: $key")
+    Log.v(TAG, "Cache hit: $key")
     return cache[key]!!.first
   }
 

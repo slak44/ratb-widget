@@ -32,7 +32,10 @@ class RATBWidgetProvider : AppWidgetProvider() {
     private const val ACTION_STOP_CHANGE = "change_stop"
     private const val ACTION_SHOW_ALL_SCHEDULE = "show_all_schedule"
 
-    private val reqCodes = generateSequence(0) { it + 1 }
+    private var reqCodes = object {
+      private var c = 0
+      operator fun invoke() = c++
+    }
   }
 
   /** Update the [RemoteViews] content using the provided [Schedule]. */
@@ -72,21 +75,19 @@ class RATBWidgetProvider : AppWidgetProvider() {
     val intent = Intent(context, this@RATBWidgetProvider::class.java)
     intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
     use(intent)
-    views.setOnClickPendingIntent(id, PendingIntent.getBroadcast(
-        context, reqCodes.take(1).single(), intent, PendingIntent.FLAG_UPDATE_CURRENT))
-  }
-
-  /** Manually call [onUpdate]. */
-  private fun callUpdate(context: Context, appWidgetIds: IntArray) {
-    onUpdate(context, AppWidgetManager.getInstance(context), appWidgetIds)
+    val reqCode = reqCodes()
+    Log.v(TAG, "Building intent for $appWidgetId, reqCode=$reqCode")
+    views.setOnClickPendingIntent(id,
+        PendingIntent.getBroadcast(context, reqCode, intent, PendingIntent.FLAG_UPDATE_CURRENT))
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     val id = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS)?.get(0)
+    Log.v(TAG, "Received broadcast: id=$id, action=${intent.action}")
     when (intent.action) {
       ACTION_TOGGLE_DIR -> {
         context.p.toggleIsReverse(id!!, context.p.lineNr(id))
-        callUpdate(context, intArrayOf(id))
+        updateWidget(context, AppWidgetManager.getInstance(context), id)
       }
       ACTION_LINE_CHANGE -> {
         val newIntent = context.intentFor<PhonyDialog>()
@@ -113,7 +114,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
   }
 
   private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, id: Int) {
-    Log.v(TAG, "Updating widget $id")
+    Log.i(TAG, "Updating widget $id")
     val views = RemoteViews(context.packageName, R.layout.initial_layout)
 
     buildIntent(context, views, id, R.id.refreshBtn) { it.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE }
@@ -146,8 +147,8 @@ class RATBWidgetProvider : AppWidgetProvider() {
       val schedule = getSchedule(route, targetStop).await() ?: return@launch
       Log.v(TAG, "getSchedule(<route>, $targetStop): $schedule")
       showSchedule(context, views, schedule)
-    }.invokeOnCompletion {
-      appWidgetManager.updateAppWidget(intArrayOf(id), views)
+
+      appWidgetManager.updateAppWidget(id, views)
     }
   }
 
