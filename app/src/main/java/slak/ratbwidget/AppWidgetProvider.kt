@@ -91,14 +91,14 @@ class RATBWidgetProvider : AppWidgetProvider() {
       }
       ACTION_LINE_CHANGE -> {
         val newIntent = context.intentFor<PhonyDialog>()
-        newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+        newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_NEW_TASK)
         newIntent.action = ACTION_SELECT_LINE
         newIntent.putExtra(EXTRA_WIDGET_ID, id)
         context.startActivity(newIntent)
       }
       ACTION_STOP_CHANGE -> {
         val newIntent = context.intentFor<PhonyDialog>()
-        newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+        newIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_NEW_TASK)
         newIntent.action = ACTION_SELECT_STOP
         newIntent.putExtra(EXTRA_WIDGET_ID, id)
         newIntent.putParcelableArrayListExtra(EXTRA_STOP_LIST, intent.getParcelableArrayListExtra(EXTRA_STOP_LIST))
@@ -106,6 +106,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
       }
       ACTION_SHOW_ALL_SCHEDULE -> {
         val newIntent = context.intentFor<ViewScheduleActivity>()
+        newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         newIntent.putExtra(EXTRA_WIDGET_ID, id)
         context.startActivity(newIntent)
       }
