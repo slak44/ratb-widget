@@ -11,6 +11,7 @@ import android.widget.RemoteViews
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.anko.intentFor
 import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
@@ -131,23 +132,25 @@ class RATBWidgetProvider : AppWidgetProvider() {
     val line = context.p.lineNr(id)
     views.setTextViewText(R.id.lineNumber, line.nr.toString())
 
-    GlobalScope.launch(Dispatchers.Main) {
-      val route = getRoute(line).await() ?: return@launch
+    GlobalScope.launch(Dispatchers.IO) {
+      val route = getRoute(line) ?: return@launch
       Log.v(TAG, "getRoute($line): $route")
-      showRoute(context, views, route, context.p.isReverse(id, line))
 
       val stops = if (context.p.isReverse(id, line)) route.stopsFrom else route.stopsTo
       val targetStop = stops.find { it.stopId == context.p.stopId(id, line) } ?: stops[0]
-      views.setTextViewText(R.id.stop, targetStop.name)
 
-      buildIntent(context, views, id, R.id.stop) {
-        it.action = ACTION_STOP_CHANGE
-        it.putParcelableArrayListExtra(EXTRA_STOP_LIST, ArrayList(stops))
-      }
-
-      val schedule = getSchedule(route, targetStop).await() ?: return@launch
+      val schedule = getSchedule(route, targetStop) ?: return@launch
       Log.v(TAG, "getSchedule(<route>, $targetStop): $schedule")
-      showSchedule(context, views, schedule)
+
+      withContext(Dispatchers.Main) {
+        showRoute(context, views, route, context.p.isReverse(id, line))
+        views.setTextViewText(R.id.stop, targetStop.name)
+        buildIntent(context, views, id, R.id.stop) {
+          it.action = ACTION_STOP_CHANGE
+          it.putParcelableArrayListExtra(EXTRA_STOP_LIST, ArrayList(stops))
+        }
+        showSchedule(context, views, schedule)
+      }
 
       appWidgetManager.updateAppWidget(id, views)
     }

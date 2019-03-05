@@ -1,16 +1,12 @@
 package slak.ratbwidget
 
 import android.os.Parcelable
+import android.support.annotation.WorkerThread
 import android.util.Log
 import kotlinx.android.parcel.Parcelize
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.async
 import org.jsoup.Jsoup
 import org.threeten.bp.DayOfWeek
 import java.net.URL
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /** Stores a list of hours, each hour containing a list of minutes. */
@@ -58,6 +54,7 @@ private const val TAG = "Request"
 
 private var sessionCookie: String? = null
 /** Do black magic to obtain the text at the given [url]. */
+@WorkerThread
 private fun doConnection(url: String): String {
   val urlObj = URL(url).openConnection()
   urlObj.setRequestProperty("Cookie", "PHPSESSID=$sessionCookie;")
@@ -76,6 +73,7 @@ private fun doConnection(url: String): String {
  * Wrap error handling for [doConnection].
  * @returns the text at [url] if successful, null otherwise
  */
+@WorkerThread
 private fun getData(url: String, cacheKey: String? = url): String? {
   try {
     if (cacheKey != null) {
@@ -98,11 +96,10 @@ private fun getData(url: String, cacheKey: String? = url): String? {
   }
 }
 
-val networkContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-
 /** Fetch the [Route] for the given [line]. */
-fun getRoute(line: Line): Deferred<Route?> = GlobalScope.async(networkContext) {
-  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=${line.nr}") ?: return@async null
+@WorkerThread
+fun getRoute(line: Line): Route? {
+  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=${line.nr}") ?: return null
   val doc = Jsoup.parse(text)
   val stops = doc.select(
       "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map { el ->
@@ -115,17 +112,16 @@ fun getRoute(line: Line): Deferred<Route?> = GlobalScope.async(networkContext) {
   }
   val stopsTo = stops.filter { it.stopId.id < 50 }
   val stopsFrom = stops.filter { it.stopId.id >= 50 }
-  return@async Route(line, stopsTo, stopsFrom)
+  return Route(line, stopsTo, stopsFrom)
 }
 
 /** Fetch the [Schedule] for the given [route] and [stop]. */
-fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.async(networkContext) {
+@WorkerThread
+fun getSchedule(route: Route, stop: Stop): Schedule? {
   // Everything about this site is retarded
-  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", null)
-      ?: return@async null
+  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", null) ?: return null
   val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line.nr} ${stop.stopId.id}"
-  val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey)
-      ?: return@async null
+  val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey) ?: return null
   // end retarded code
   val doc = Jsoup.parse(realResponse)
   try {
@@ -145,20 +141,21 @@ fun getSchedule(route: Route, stop: Stop): Deferred<Schedule?> = GlobalScope.asy
     if (timeLists.all { list -> (list ?: emptyList()).all { it.isEmpty() } }) {
       requestCache.remove(cacheKey)
       Log.w(TAG, "Cache might be bad")
-      return@async getSchedule(route, stop).await()
+      return getSchedule(route, stop)
     }
-    return@async Schedule(route.line, stop, timeLists[0], timeLists[1], timeLists[2])
+    return Schedule(route.line, stop, timeLists[0], timeLists[1], timeLists[2])
   } catch (e: Exception) {
     requestCache.remove(cacheKey)
     Log.e(TAG, "error parsing schedule", e)
     Log.v(TAG, realResponse)
-    return@async null
+    return null
   }
 }
 
 /** Get a list of bus lines. */
-fun getBusList(): Deferred<List<Int>?> = GlobalScope.async(networkContext) {
-  val page = getData("http://www.ratb.ro/v_trasee.php") ?: return@async null
+@WorkerThread
+fun getBusList(): List<Int>? {
+  val page = getData("http://www.ratb.ro/v_trasee.php") ?: return null
   val doc = Jsoup.parse(page)
-  doc.select("select[name=\"tlin3\"] > option").drop(1).map { it.text().toInt() }
+  return doc.select("select[name=\"tlin3\"] > option").drop(1).map { it.text().toInt() }
 }
