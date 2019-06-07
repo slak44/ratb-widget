@@ -1,6 +1,6 @@
 # RATB Widget
 
-A widget that shows [RATB](http://www.ratb.ro) bus times on the home screen.
+A widget that shows [RATB](http://www.stbsa.ro) bus times on the home screen.
 
 Sample usage:
 ![Sample](./sample.png)

@@ -99,7 +99,7 @@ private fun getData(url: String, cacheKey: String? = url): String? {
 /** Fetch the [Route] for the given [line]. */
 @WorkerThread
 fun getRoute(line: Line): Route? {
-  val text = getData("http://www.ratb.ro/v_bus_urban.php?tlin1=${line.nr}") ?: return null
+  val text = getData("http://www.stbsa.ro/v_bus_urban.php?tlin1=${line.nr}") ?: return null
   val doc = Jsoup.parse(text)
   val stops = doc.select(
       "table[border=\"1\"][cellpadding=\"2\"] > tbody > tr[align=\"left\"]").map { el ->
@@ -119,9 +119,9 @@ fun getRoute(line: Line): Route? {
 @WorkerThread
 fun getSchedule(route: Route, stop: Stop): Schedule? {
   // Everything about this site is retarded
-  getData("http://www.ratb.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", null) ?: return null
-  val cacheKey = "http://www.ratb.ro/v_statie.php ${route.line.nr} ${stop.stopId.id}"
-  val realResponse = getData("http://www.ratb.ro/v_statie.php", cacheKey) ?: return null
+  getData("http://www.stbsa.ro/vv_statie.php?linie=${route.line.nr}&statie=${stop.stopId.id}", null) ?: return null
+  val cacheKey = "http://www.stbsa.ro/v_statie.php ${route.line.nr} ${stop.stopId.id}"
+  val realResponse = getData("http://www.stbsa.ro/v_statie.php", cacheKey) ?: return null
   // end retarded code
   val doc = Jsoup.parse(realResponse)
   try {
@@ -155,7 +155,7 @@ fun getSchedule(route: Route, stop: Stop): Schedule? {
 /** Get a list of bus lines. */
 @WorkerThread
 fun getBusList(): List<Int>? {
-  val page = getData("http://www.ratb.ro/v_trasee.php") ?: return null
+  val page = getData("http://www.stbsa.ro/v_trasee.php") ?: return null
   val doc = Jsoup.parse(page)
   return doc.select("select[name=\"tlin3\"] > option").drop(1).map { it.text().toInt() }
 }
