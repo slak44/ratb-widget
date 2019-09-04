@@ -73,6 +73,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
                                   @IdRes id: Int,
                                   use: (Intent) -> Unit = {}) {
     val intent = Intent(this, this@RATBWidgetProvider::class.java)
+    intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
     intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
     use(intent)
     val reqCode = reqCodes()
