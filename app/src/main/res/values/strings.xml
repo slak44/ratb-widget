@@ -13,5 +13,5 @@
     <string name="daily_schedule">Daily</string>
     <string name="saturday_schedule">Saturday</string>
     <string name="sunday_schedule">Sunday</string>
-    <string name="schedule_for_title">Schedule for line %d, stop %s</string>
+    <string name="schedule_for_title">Schedule for line %s, stop %s</string>
 </resources>

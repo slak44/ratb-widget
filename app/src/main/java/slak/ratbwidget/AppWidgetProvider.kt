@@ -39,17 +39,14 @@ class RATBWidgetProvider : AppWidgetProvider() {
     }
   }
 
-  /** Update the [RemoteViews] content using the provided [Schedule]. */
-  private fun Context.showSchedule(views: RemoteViews, schedule: Schedule) {
+  /** Update the [RemoteViews] content using the provided [schedule]. */
+  private fun Context.showSchedule(views: RemoteViews, schedule: List<HourTimes>) {
     fun buildTime(moment: Moment): String = "${padNr(moment.t / 100)}:${padNr(moment.t % 100)}"
     val now = ZonedDateTime.now(ZoneId.systemDefault())
     val currentMoment = Moment(now.hour * 100 + now.minute)
-    val moments = schedule.pickList(now.dayOfWeek).let {
-      if (it != null) return@let it
-      views.setTextViewText(R.id.prevTime, resources.getString(R.string.not_available))
-      views.setTextViewText(R.id.nextTime, resources.getString(R.string.not_available))
-      return@showSchedule
-    }!!.flatten()
+    views.setTextViewText(R.id.prevTime, resources.getString(R.string.not_available))
+    views.setTextViewText(R.id.nextTime, resources.getString(R.string.not_available))
+    val moments = schedule.flatten()
     val nextIdx = moments.indices.firstOrNull { idx -> currentMoment < moments[idx] } ?: 0
     val next2Idx = moments.indices.firstOrNull { idx -> moments[nextIdx] < moments[idx] } ?: 1
     val next = buildTime(moments[nextIdx])
@@ -60,10 +57,9 @@ class RATBWidgetProvider : AppWidgetProvider() {
     views.setTextViewText(R.id.nextTime, resources.getString(R.string.next_time, next, next2))
   }
 
-  /** Update the [RemoteViews] content using the provided [Route]. */
-  private fun Context.showRoute(views: RemoteViews, route: Route, reverse: Boolean) {
-    val stops = if (reverse) route.stopsFrom else route.stopsTo
-    val routeText = resources.getString(R.string.route, stops.first().name, stops.last().name)
+  /** Update the [RemoteViews] content using the provided [route]. */
+  private fun Context.showRoute(views: RemoteViews, route: APILineStops, direction: Int) {
+    val routeText = resources.getString(R.string.route, route.startStopName(direction), route.endStopName(direction))
     views.setTextViewText(R.id.route, routeText)
   }
 
@@ -87,7 +83,7 @@ class RATBWidgetProvider : AppWidgetProvider() {
     Log.v(TAG, "Received broadcast: id=$id, action=${intent.action}")
     when (intent.action) {
       ACTION_TOGGLE_DIR -> {
-        p.toggleIsReverse(id!!, p.lineNr(id))
+        p.toggleIsReverse(id!!, p.lineId(id))
         updateWidget(context, AppWidgetManager.getInstance(context), id)
       }
       ACTION_LINE_CHANGE -> {
@@ -129,27 +125,17 @@ class RATBWidgetProvider : AppWidgetProvider() {
     views.setTextViewText(R.id.nextTime, resources.getString(R.string.next_time, "?", "?"))
     views.setTextViewText(R.id.route, resources.getString(R.string.route, "?", "?"))
 
-    val line = p.lineNr(id)
-    views.setTextViewText(R.id.lineNumber, line.nr.toString())
-
     GlobalScope.launch(Dispatchers.IO) {
-      val route = getRoute(line) ?: return@launch
-      Log.v(TAG, "getRoute($line): $route")
-
-      val stops = if (p.isReverse(id, line)) route.stopsFrom else route.stopsTo
-      val targetStop = stops.find { it.stopId == p.stopId(id, line) } ?: stops[0]
-
-      val schedule = getSchedule(route, targetStop) ?: return@launch
-      Log.v(TAG, "getSchedule(<route>, $targetStop): $schedule")
-
+      val (lineData, stopData, direction, timetable) = p.fetchData(id) ?: return@launch
       withContext(Dispatchers.Main) {
-        showRoute(views, route, p.isReverse(id, line))
-        views.setTextViewText(R.id.stop, targetStop.name)
+        views.setTextViewText(R.id.lineNumber, lineData.name)
+        showRoute(views, lineData, direction)
+        views.setTextViewText(R.id.stop, stopData.name)
         buildIntent(views, id, R.id.stop) {
           it.action = ACTION_STOP_CHANGE
-          it.putParcelableArrayListExtra(EXTRA_STOP_LIST, ArrayList(stops))
+          it.putParcelableArrayListExtra(EXTRA_STOP_LIST, ArrayList(lineData.stops))
         }
-        showSchedule(views, schedule)
+        showSchedule(views, timetable)
       }
 
       appWidgetManager.updateAppWidget(id, views)

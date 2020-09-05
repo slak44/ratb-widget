@@ -31,13 +31,13 @@ class PhonyDialog : AppCompatActivity(), CoroutineScope {
   private fun runSelectLine() {
     title = getString(R.string.select_line_title)
     launch {
-      val items = getBusList() ?: emptyList()
+      val items = getLineList() ?: emptyList()
       withContext(Dispatchers.Main) {
         val listView = getInitialListView()
-        listView.adapter = ArrayAdapter<Int>(
-            this@PhonyDialog, itemLayout, items)
+        listView.adapter = ArrayAdapter(
+            this@PhonyDialog, itemLayout, items.map { it.name })
         listView.setOnItemClickListener { _, _, position, _ ->
-          p.setLineNr(widgetId, Line(items[position]))
+          p.setLineId(widgetId, Line(items[position].id))
           callUpdateWidgets()
           finish()
         }
@@ -49,11 +49,11 @@ class PhonyDialog : AppCompatActivity(), CoroutineScope {
   /** Set the stop selection dialog as the contentView. */
   private fun runSelectStop() {
     title = getString(R.string.select_stop_title)
-    val stops = intent!!.extras!!.getParcelableArrayList<Stop>(EXTRA_STOP_LIST)!!
+    val stops = intent!!.extras!!.getParcelableArrayList<APIStop>(EXTRA_STOP_LIST)!!
     val listView = getInitialListView()
-    listView.adapter = ArrayAdapter<String>(this, itemLayout, stops.map { it.name })
+    listView.adapter = ArrayAdapter(this, itemLayout, stops.map { it.name })
     listView.setOnItemClickListener { _, _, position, _ ->
-      p.setStopId(widgetId, p.lineNr(widgetId), stops[position].stopId)
+      p.setStopId(widgetId, p.lineId(widgetId), StopId(stops[position].id))
       callUpdateWidgets()
       finish()
     }
