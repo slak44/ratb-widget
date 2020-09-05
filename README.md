@@ -13,9 +13,9 @@ Dependencies are managed by Gradle.
 
 Host: https://info.stbsa.ro
 
-`GET /rp/api/lines`: returns `LinesResponse`
-`GET /rp/api/lines/:id/direction/:dir`: returns `StopLine`
-`GET /rp/api/lines/:id/stops/:stopId`: returns `TimetableResponse`
+- `GET /rp/api/lines`: returns `LinesResponse`
+- `GET /rp/api/lines/:id/direction/:dir`: returns `StopLine`
+- `GET /rp/api/lines/:id/stops/:stopId`: returns `TimetableResponse`
 
 ```typescript
 interface Stop {
